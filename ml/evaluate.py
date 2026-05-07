@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import os
-import pickle
-import tempfile
 import urllib.parse
 from io import BytesIO
-from pathlib import Path
 from typing import Any
 
 import mlflow
@@ -96,10 +93,7 @@ def run_experiment_set(
                             "f1": metrics["f1"],
                         }
                     )
-                    with tempfile.TemporaryDirectory() as tmpdir:
-                        model_path = Path(tmpdir) / "model.pkl"
-                        model_path.write_bytes(pickle.dumps(model))
-                        mlflow.log_artifact(str(model_path), artifact_path="model")
+                    mlflow.sklearn.log_model(model, artifact_path="model")
 
                     logger.info(
                         "ml_run_complete",

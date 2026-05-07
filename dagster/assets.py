@@ -8,6 +8,7 @@ from datetime import date, datetime, timezone
 from io import BytesIO
 from typing import Any
 
+import mlflow
 import pandas as pd
 import structlog
 from resources import MinioResource, PipelineConfigResource
@@ -191,7 +192,9 @@ def ml_experiment(
         bucket=pipeline_config.bucket,
         trino_url=pipeline_config.trino_url,
     )
-    context.add_output_metadata({"best_run_id": best_run_id})
+    mlflow.set_tracking_uri(pipeline_config.mlflow_tracking_uri)
+    mv = mlflow.register_model(f"runs:/{best_run_id}/model", "ecb-dax-impact")
+    context.add_output_metadata({"best_run_id": best_run_id, "model_version": mv.version})
     _emit_metric("ml_experiment", started)
     return best_run_id
 
