@@ -186,7 +186,7 @@ def check_trino() -> StatusTuple:
 
 def check_mlflow() -> StatusTuple:
     try:
-        response = requests.get("http://localhost:5000/health", timeout=5)
+        response = requests.get("http://localhost:5002/health", timeout=5)
         if response.status_code != 200:
             return ("MLflow", "FAIL", f"HTTP {response.status_code}")
         return ("MLflow", "PASS", "HTTP 200 /health")

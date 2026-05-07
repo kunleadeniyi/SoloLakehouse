@@ -35,7 +35,7 @@ up: prepare-data-dirs
 	@echo "SoloLakehouse is ready."
 	@echo "  MinIO Console:  http://localhost:9001"
 	@echo "  Trino UI:       http://localhost:8080"
-	@echo "  MLflow UI:      http://localhost:5000"
+	@echo "  MLflow UI:      http://localhost:5002"
 	@echo "  Dagster UI:     http://localhost:3000"
 	@echo "  OpenMetadata:  http://localhost:8585"
 	@echo "  Superset UI:   http://localhost:8088"
