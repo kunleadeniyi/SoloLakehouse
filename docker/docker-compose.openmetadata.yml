@@ -32,7 +32,7 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
     environment:
       discovery.type: single-node
-      ES_JAVA_OPTS: "-Xms768m -Xmx768m"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       xpack.security.enabled: "false"
       cluster.routing.allocation.disk.threshold_enabled: "false"
     ports:
@@ -83,4 +83,38 @@ services:
       interval: 20s
       timeout: 10s
       retries: 15
+      start_period: 120s
+
+  om-ingestion:
+    container_name: slh-om-ingestion
+    image: docker.getcollate.io/openmetadata/ingestion:1.5.6
+    depends_on:
+      om-mysql:
+        condition: service_healthy
+      openmetadata-server:
+        condition: service_healthy
+    environment:
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__OPENMETADATA_AIRFLOW_APIS__DAG_GENERATED_CONFIGS: "/opt/airflow/dag_generated_configs"
+      DB_HOST: om-mysql
+      DB_PORT: 3306
+      AIRFLOW_DB: airflow_db
+      DB_SCHEME: mysql+pymysql
+      DB_USER: airflow_user
+      DB_PASSWORD: airflow_pass
+      DB_PROPERTIES: ""
+    entrypoint: /bin/bash
+    command: ["/opt/airflow/ingestion_dependency.sh"]
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./data/om-ingestion-dags:/opt/airflow/dag_generated_configs
+      - ./data/om-ingestion-dags:/opt/airflow/dags
+      - ./data/om-ingestion-tmp:/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
       start_period: 120s
