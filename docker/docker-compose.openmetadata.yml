@@ -34,6 +34,7 @@ services:
       discovery.type: single-node
       ES_JAVA_OPTS: "-Xms768m -Xmx768m"
       xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
     ports:
       - "9200:9200"
       - "9300:9300"
