@@ -30,10 +30,10 @@ def transform_ecb_bronze_to_silver(df: pd.DataFrame) -> pd.DataFrame:
 
     transformed = transformed.sort_values("observation_date")
     transformed["rate_pct"] = transformed["rate_pct"].ffill()
+    transformed = transformed.drop_duplicates(subset=["observation_date"], keep="last")
     transformed["rate_change_bps"] = (
         (transformed["rate_pct"] - transformed["rate_pct"].shift(1)) * 100
     ).round(1)
-    transformed = transformed.drop_duplicates(subset=["observation_date"], keep="last")
     transformed = transformed.drop(columns=["_ingestion_timestamp", "_source"], errors="ignore")
 
     return transformed[["observation_date", "rate_pct", "rate_change_bps"]]

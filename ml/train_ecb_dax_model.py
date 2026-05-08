@@ -39,8 +39,10 @@ def train(
 ) -> tuple[Any, dict[str, Any]]:
     """Train a binary classifier with TimeSeriesSplit cross-validation."""
     params = params or {}
-    if len(df) < 6:
-        raise ValueError("At least 6 rows are required for TimeSeriesSplit(n_splits=5)")
+    if len(df) < 3:
+        raise ValueError(f"At least 3 rows are required for training, got {len(df)}")
+
+    n_splits = min(5, len(df) - 1)
 
     training_df = df.copy()
     training_df = training_df.sort_values("event_date").reset_index(drop=True)
@@ -50,7 +52,7 @@ def train(
     x["is_rate_cut"] = x["is_rate_cut"].astype(int)
     y = (training_df["dax_return_1d"] > 0).astype(int)
 
-    splitter = TimeSeriesSplit(n_splits=5)
+    splitter = TimeSeriesSplit(n_splits=n_splits)
     accuracy_scores: list[float] = []
     precision_scores: list[float] = []
     recall_scores: list[float] = []
@@ -76,7 +78,7 @@ def train(
         "precision": float(sum(precision_scores) / len(precision_scores)),
         "recall": float(sum(recall_scores) / len(recall_scores)),
         "f1": float(sum(f1_scores) / len(f1_scores)),
-        "n_splits": 5,
+        "n_splits": n_splits,
         "model_type": model_type,
         "params": params,
     }
