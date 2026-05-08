@@ -153,6 +153,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DAGSTER_HOME: /app/dagster
+      OM_SERVER_URL: http://openmetadata-server:8585
+      OM_JWT_TOKEN: ${OM_JWT_TOKEN:-}
     command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000", "-w", "/app/dagster/workspace.yaml"]
     ports:
       - "3000:3000"
@@ -194,6 +196,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DAGSTER_HOME: /app/dagster
+      OM_SERVER_URL: http://openmetadata-server:8585
+      OM_JWT_TOKEN: ${OM_JWT_TOKEN:-}
     command: ["dagster-daemon", "run", "-w", "/app/dagster/workspace.yaml"]
     volumes:
       - ./data/dagster:/app/dagster/storage

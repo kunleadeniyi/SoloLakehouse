@@ -13,6 +13,8 @@ import pandas as pd
 import structlog
 from resources import MinioResource, PipelineConfigResource
 
+import om_lineage
+
 from dagster import (
     AssetCheckResult,
     AssetKey,
@@ -118,7 +120,6 @@ def ecb_silver(
     pipeline_config: PipelineConfigResource,
     ecb_bronze: dict[str, Any],
 ) -> str:
-    _ = ecb_bronze
     started = time.perf_counter()
     minio_client = minio.get_client()
     silver_path = ecb_bronze_to_silver.run(
@@ -129,6 +130,8 @@ def ecb_silver(
     context.add_output_metadata(
         {"silver_path": silver_path, "row_count": int(len(silver_df.index))}
     )
+    bronze_path = ecb_bronze.get("path") or "bronze/ecb_rates"
+    om_lineage.lineage_minio_to_minio(bronze_path, silver_path)
     _emit_metric("ecb_silver", started)
     return silver_path
 
@@ -140,7 +143,6 @@ def dax_silver(
     pipeline_config: PipelineConfigResource,
     dax_bronze: dict[str, Any],
 ) -> str:
-    _ = dax_bronze
     started = time.perf_counter()
     minio_client = minio.get_client()
     silver_path = dax_bronze_to_silver.run(
@@ -151,6 +153,8 @@ def dax_silver(
     context.add_output_metadata(
         {"silver_path": silver_path, "row_count": int(len(silver_df.index))}
     )
+    bronze_path = dax_bronze.get("path") or "bronze/dax_daily"
+    om_lineage.lineage_minio_to_minio(bronze_path, silver_path)
     _emit_metric("dax_silver", started)
     return silver_path
 
@@ -163,7 +167,6 @@ def gold_features(
     ecb_silver: str,
     dax_silver: str,
 ) -> str:
-    _ = (ecb_silver, dax_silver)
     started = time.perf_counter()
     minio_client = minio.get_client()
     gold_path = silver_to_gold_features.run(
@@ -173,6 +176,9 @@ def gold_features(
     gold_df = _read_parquet_from_minio(minio_client, pipeline_config.bucket, gold_path)
     register_gold_tables_trino(trino_url=pipeline_config.trino_url, bucket=pipeline_config.bucket)
     context.add_output_metadata({"gold_path": gold_path, "event_count": int(len(gold_df.index))})
+    om_lineage.lineage_minio_to_minio(ecb_silver, gold_path)
+    om_lineage.lineage_minio_to_minio(dax_silver, gold_path)
+    om_lineage.lineage_minio_to_table(gold_path, "hive", "gold", "ecb_dax_features")
     _emit_metric("gold_features", started)
     return gold_path
 
@@ -195,6 +201,7 @@ def ml_experiment(
     mlflow.set_tracking_uri(pipeline_config.mlflow_tracking_uri)
     mv = mlflow.register_model(f"runs:/{best_run_id}/model", "ecb-dax-impact")
     context.add_output_metadata({"best_run_id": best_run_id, "model_version": mv.version})
+    om_lineage.lineage_table_to_mlmodel("hive", "gold", "ecb_dax_features", mv.name)
     _emit_metric("ml_experiment", started)
     return best_run_id
 
